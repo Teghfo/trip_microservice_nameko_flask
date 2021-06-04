@@ -1,0 +1,41 @@
+version: "3.7"
+
+services:
+  passengers:
+    build:
+      context: passenger_service
+    depends_on:
+      - rabbit
+
+  drivers:
+    build:
+      context: Driver_Service
+    depends_on:
+      - rabbit
+
+  trip:
+    build:
+      context: Trip_Service
+    depends_on:
+      - rabbit
+
+  gateway:
+    build:
+      context: Gateway_Service
+    depends_on:
+      - rabbit
+    ports:
+      - "8003:8000"
+
+  redis:
+    image: redis:alpine
+    hostname: redis
+    volumes:
+      - redis-uber-volume:/data
+
+  rabbit:
+    image: rabbitmq:3-management
+    ports:
+      - "15672:15672"
+volumes:
+  redis-uber-volume:
