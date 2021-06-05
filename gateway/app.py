@@ -4,6 +4,9 @@ from nameko.standalone.rpc import ServiceRpcProxy
 app = Flask(__name__)
 
 
+RABBIT_HOST_NAME = "rabbit"
+
+
 @app.route('/')
 def take_taxi():
     return """
@@ -25,40 +28,57 @@ def take_taxi():
 
 @app.route('/assign_driver', methods=['POST'])
 def assign_driver():
+    with driver_rpc_proxy() as task_proxy:
+        driver_id = task_proxy.create("ashkan")
+
+    with passenger_rpc_proxy() as task_proxy:
+        passenger_id = task_proxy.create("akbar")
+
     from_loc = request.form['from']
     to_loc = request.form['to']
+
     with trip_rpc_proxy() as task_proxy:
-        task_id = task_proxy.create("fibonacci", n)
+        trip_id = task_proxy.create(passenger_id, driver_id, from_loc, to_loc)
 
     return """
         <html>
             <body>
                 <p>
-                    Your task is running.
-                    <a href="/task/{task_id}">Result</a>
+                    Your trip is set.
+                    <a href="/trip/{trip_id}">Result</a>
                 </p>
             </body>
         </html>
-    """.format(task_id=task_id)
+    """.format(trip_id=trip_id)
 
 
-@app.route('/task/<string:task_id>')
-def task_result(task_id):
+@app.route('/trip/<string:trip_id>')
+def trip_result(trip_id):
     with trip_rpc_proxy() as task_proxy:
-        result = task_proxy.get_result(task_id)
+        result = task_proxy.get(trip_id)
 
     return """
         <html>
             <body>
-                <p>The result of task {task_id} is {result}.</p>
+                <p>The result of trip {trip_id} is {result}.</p>
             </body>
         </html>
-    """.format(task_id=task_id, result=result)
+    """.format(trip_id=trip_id, result=result)
 
 
 def trip_rpc_proxy():
-    config = {'AMQP_URI': 'amqp://guest:guest@localhost/'}
+    config = {'AMQP_URI': f'amqp://guest:guest@{RABBIT_HOST_NAME}/'}
     return ServiceRpcProxy('trip_service', config)
+
+
+def passenger_rpc_proxy():
+    config = {'AMQP_URI': f'amqp://guest:guest@{RABBIT_HOST_NAME}/'}
+    return ServiceRpcProxy('passenger_service', config)
+
+
+def driver_rpc_proxy():
+    config = {'AMQP_URI': f'amqp://guest:guest@{RABBIT_HOST_NAME}/'}
+    return ServiceRpcProxy('driver_service', config)
 
 
 if __name__ == '__main__':

@@ -9,19 +9,19 @@ services:
 
   drivers:
     build:
-      context: Driver_Service
+      context: driver_service
     depends_on:
       - rabbit
 
   trip:
     build:
-      context: Trip_Service
+      context: trip_service
     depends_on:
       - rabbit
 
   gateway:
     build:
-      context: Gateway_Service
+      context: gateway
     depends_on:
       - rabbit
     ports:
@@ -31,11 +31,11 @@ services:
     image: redis:alpine
     hostname: redis
     volumes:
-      - redis-uber-volume:/data
+      - redis-trip-volume:/data
 
   rabbit:
     image: rabbitmq:3-management
     ports:
       - "15672:15672"
 volumes:
-  redis-uber-volume:
+  redis-trip-volume:
